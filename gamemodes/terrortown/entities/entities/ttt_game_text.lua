@@ -54,28 +54,31 @@ end
 function ENT:AcceptInput(name, activator)
 	if name == "Display" then
 		local recv = activator
-
-		local r = self.Receiver
-		if r == RECEIVE_ALL then
-			recv = nil
-		elseif r == RECEIVE_DETECTIVE then
-			recv = GetRoleChatFilter(ROLE_DETECTIVE)
-		elseif r == RECEIVE_TRAITOR then
-			recv = GetTeamChatFilter(TEAM_TRAITOR)
-		elseif r == RECEIVE_INNOCENT then
-			recv = GetTeamChatFilter(TEAM_INNOCENT)
-		elseif r == RECEIVE_ACTIVATOR then
-			if not IsValid(activator) or not activator:IsPlayer() then
+		
+		-- ensure the activator is valid + is a player
+		if IsValid(activator) and activator:IsPlayer() then
+			-- was considering moving the RECEIVE int declarations here to save memory,
+			-- but saw it being used above. Would move it there too but idk
+			
+			local receiver_tbl = {
+				RECEIVE_ALL = nil,
+				RECEIVE_DETECTIVE = GetRoleChatFilter(ROLE_DETECTIVE),
+				RECEIVE_TRAITOR = GetTeamChatFilter(TEAM_TRAITOR),
+				RECEIVE_INNOCENT = GetTeamChatFilter(TEAM_INNOCENT),
+				RECEIVE_CUSTOMROLE = GetTeamChatFilter(self.teamReceiver)
+			}
+			recv = receiver_tbl[self.Receiver]
+			
+			else -- either not a valid activator, or activator is not a player
 				ErrorNoHalt("ttt_game_text tried to show message to invalid !activator\n")
 
-				return true
-			end
-		elseif r == RECEIVE_CUSTOMROLE and self.teamReceiver then
-			recv = GetTeamChatFilter(self.teamReceiver)
+				return false -- this is supposed to indicate success/fail, right?
 		end
 
 		CustomMsg(recv, self.Message, self.Color)
 
 		return true
 	end
+	
+	return false -- to show failure: name was not "Display"
 end
